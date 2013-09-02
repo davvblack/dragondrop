@@ -18,8 +18,7 @@ $name = preg_replace("/[^A-Z0-9._-]/i", "_", $myFile["name"]);
 $i = 0;
 $parts = pathinfo($name);
 while (file_exists(UPLOAD_DIR . $name)) {
-$i++;
-$name = $parts["filename"] . "-" . $i . "." . $parts["extension"];
+$name = $parts["filename"] . "-" . ++$i . "." . $parts["extension"];
 }
 
 // preserve file from temporary directory
@@ -32,4 +31,5 @@ exit;
 
 // set proper permissions on the new file
 chmod(UPLOAD_DIR . $name, 0644);
+print $name;
 }
