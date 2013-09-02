@@ -11,24 +11,26 @@ progress:after { content: '%'; }
 #workarea { border: 1px solid black; margin 1px; }
 </style>
 <article>
-  <div id="holder">
-    <canvas id="workarea" width="400" height="400"></canvas>
-  </div> 
-  <p id="upload" class="hidden"><label>Drag & drop not supported, but you can still upload via this input field:<br><input type="file"></label></p>
-  <p id="filereader">File API & FileReader API not supported</p>
-  <p id="formdata">XHR2's FormData is not supported</p>
-  <p id="progress">XHR2's upload progress isn't supported</p>
-  <p>Upload progress: <progress id="uploadprogress" min="0" max="100" value="0">0</progress></p>
-  <p>Drag an image from your desktop on to the drop zone above to see the browser both render the preview, but also upload automatically to this server.</p>
+    <div id="holder">
+        <canvas id="workarea" width="400" height="400"></canvas>
+    </div> 
+    <p id="upload" class="hidden"><label>Drag & drop not supported, but you can still upload via this input field:<br><input type="file"></label></p>
+    <p id="filereader">File API & FileReader API not supported</p>
+    <p id="formdata">XHR2's FormData is not supported</p>
+    <p id="progress">XHR2's upload progress isn't supported</p>
+    <p>Upload progress: <progress id="uploadprogress" min="0" max="100" value="0">0</progress></p>
+    <p>Drag an image from your desktop on to the drop zone above to see the browser both render the preview, but also upload automatically to this server.</p>
 </article>
 <script>
+
+var dragon = {};
 
 var canvas_height = 400;
 var canvas_width = 400;
 var guess_steps = 20;
 
 canvas = document.getElementById('workarea');
-context = canvas.getContext('2d');
+dragon.context = context = canvas.getContext('2d');
     
 var holder = document.getElementById('holder'),
     tests = {
@@ -54,51 +56,31 @@ var holder = document.getElementById('holder'),
     if (tests[api] === false) {
         support[api].className = 'fail';
     } else {
-        // FFS. I could have done el.hidden = true, but IE doesn't support
-        // hidden, so I tried to create a polyfill that would extend the
-        // Element.prototype, but then IE10 doesn't even give me access
-        // to the Element object. Brilliant.
         support[api].className = 'hidden';
     }
 });
 
-function previewfile(file) {
-    if (tests.filereader === true && acceptedTypes[file.type] === true) {
-        var reader = new FileReader();
-        reader.onload = function(event) {
-            var image = new Image();
-            image.src = event.target.result;
-            console.log(image.width, image.height);
-            var use_height = image.height > image.width;
-            var start_height = start_width = 0;
-            var scale = 1;
-            if (use_height) {
-                scale = canvas_height/image.height;
-                start_width = (canvas_width - scale * image.width) / 2;
-            } else {
-                scale = canvas_width/image.width;
-                start_height = (canvas_height - scale * image.height) / 2;
-            }
-            //image.width = 250; // a fake resize
-            //holder.appendChild(image);
-            console.log(0, 0, canvas_width, canvas_height, start_width, start_height, scale * image.width, scale * image.height, scale);
-            context.clearRect ( 0, 0, canvas_width, canvas_height );
-            context.drawImage(image, 0, 0, image.width, image.height, start_width, start_height, scale * image.width, scale * image.height);
-            make_first_guess(context);
-        };
-
-        reader.readAsDataURL(file);
-    } else {
-        holder.innerHTML += '<p>Uploaded ' + file.name + ' ' + (file.size ? (file.size / 1024 | 0) + 'K' : '');
-        console.log(file);
+if (tests.dnd) {
+    holder.ondragover = function() {
+        this.className = 'hover';
+        return false;
+    };
+    holder.ondragend = function() {
+        this.className = '';
+        return false;
+    };
+    holder.ondrop = function(e) {
+        this.className = '';
+        e.preventDefault();
+        readfiles(e.dataTransfer.files);
     }
+} else {
+    fileupload.className = 'hidden';
+    fileupload.querySelector('input').onchange = function() {
+        readfiles(this.files);
+    };
 }
 
-function make_first_guess(context) {
-    for (var i=0; i<guess_steps; i++) {
-        //code
-    }
-}
 
 function readfiles(files) {
     //debugger;
@@ -130,27 +112,108 @@ function readfiles(files) {
     }
 }
 
-if (tests.dnd) {
-    holder.ondragover = function() {
-        this.className = 'hover';
-        return false;
-    };
-    holder.ondragend = function() {
-        this.className = '';
-        return false;
-    };
-    holder.ondrop = function(e) {
-        this.className = '';
-        e.preventDefault();
-        readfiles(e.dataTransfer.files);
+
+
+function previewfile(file) {
+    if (tests.filereader === true && acceptedTypes[file.type] === true) {
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            var image = new Image();
+            image.src = event.target.result;
+            console.log(image.width, image.height);
+            var use_height = image.height > image.width;
+            var start_height = start_width = 0;
+            var scale = 1;
+            if (use_height) {
+                scale = canvas_height/image.height;
+                start_width = (canvas_width - scale * image.width) / 2;
+            } else {
+                scale = canvas_width/image.width;
+                start_height = (canvas_height - scale * image.height) / 2;
+            }
+            //image.width = 250; // a fake resize
+            //holder.appendChild(image);
+            
+            console.log(0, 0, canvas_width, canvas_height, start_width, start_height, scale * image.width, scale * image.height, scale);
+            context.clearRect ( 0, 0, canvas_width, canvas_height );
+            context.drawImage(image, 0, 0, image.width, image.height, start_width, start_height, scale * image.width, scale * image.height);
+            console.log(dragon.data = context.getImageData(0, 0, canvas_width, canvas_height));
+            make_first_guess(context);
+        };
+
+        reader.readAsDataURL(file);
+    } else {
+        holder.innerHTML += '<p>Uploaded ' + file.name + ' ' + (file.size ? (file.size / 1024 | 0) + 'K' : '');
+        console.log(file);
     }
-} else {
-    fileupload.className = 'hidden';
-    fileupload.querySelector('input').onchange = function() {
-        readfiles(this.files);
-    };
 }
 
+function test_area(x, y) {
+    
+}
+
+function get_from_by_coords(data, coords) {
+    return data.subarray( 4 * (coords[0] + coords[1] * canvas_width), 4 * (coords[0] + coords[1] * canvas_width + 1))
+}
+
+function recursive_fill(x, y, data, color, threshhold, matched) {
+    //console.log("filling " + x + ", " + y);
+    var neighbors = [[x + 5, y], [x, y + 5], [x - 5, y], [x, y - 5]]; 
+    
+    for (var i=0; i<4; i++) {
+        if (neighbors[i][0]>=0 && neighbors[i][0]<canvas_width && neighbors[i][1]>=0 && neighbors[i][1]<canvas_height && !matched[neighbors[i][0] + neighbors[i][1] * canvas_width]) {
+            var pixel = get_from_by_coords(data, neighbors[i]);
+            if (color_distance(pixel, color)<threshhold) {
+                matched[neighbors[i][0] + neighbors[i][1] * canvas_width] = 1;
+                //console.log("marking " + (x + y * canvas_width));
+                recursive_fill(neighbors[i][0], neighbors[i][1], data, color, threshhold, matched);
+            }   
+        }
+    }
+}
+
+function color_distance (color_1, color_2) {
+    // na•ve rgb distance implementation.  Checks for trivial case first to save lots of unneccesary shit.
+    if (color_1[0] == color_2[0] && color_1[1] == color_2[1] && color_1[2] == color_2[2]  ) {
+        return 0;
+    }
+    return Math.sqrt(Math.pow(color_1[0] - color_2[0], 2) + Math.pow(color_1[1] - color_2[1], 2) + Math.pow(color_1[2] - color_2[2], 2));
+}
+
+function fill_similar_region(x, y) {
+    
+    var matched = new Int8Array(canvas_height * canvas_width);
+    var data = dragon.data.data;
+    var color = get_from_by_coords(data, [x, y]);
+    var threshhold = 1;
+    matched[x + y * canvas_width] = 1;
+    recursive_fill(x, y, data, color, threshhold, matched);
+    
+    for (var i=0; i<canvas_width; i++) {
+        for (var j=0; j<canvas_height; j++) {
+            if (matched[i + j * canvas_width]) {
+                console.log('found at '+ i + ', ' + j);
+                context.rect(i, j, 5, 5);
+                context.fillStyle="red";
+                context.fill();
+            }
+        }
+    }
+    
+    console.log(matched);
+}
+
+
+
+function make_first_guess() {
+    for (var i=0; i<guess_steps; i++) {
+        test_area(canvas_width * (i + 1) / (guess_steps + 2) , canvas_height/2);
+    }
+}
+
+document.getElementById('workarea').addEventListener("click", function(e) {console.log(e); fill_similar_region(e.offsetX, e.offsetY);
+//get_from_by_coords(dragon.data.data, [e.offsetX, e.offsetY]));
+})
 
 
 </script><a id="html5badge" href="http://www.w3.org/html/logo/">
