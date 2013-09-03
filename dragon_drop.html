@@ -172,34 +172,60 @@ function recursive_fill(x, y, data, color, threshhold, matched) {
     }
 }
 
-function color_distance (color_1, color_2) {
-    // na•ve rgb distance implementation.  Checks for trivial case first to save lots of unneccesary shit.
-    if (color_1[0] == color_2[0] && color_1[1] == color_2[1] && color_1[2] == color_2[2]  ) {
-        return 0;
+function queue_fill(x, y, data, color, threshhold, matched, touched) {
+
+    console.log (x, y);
+
+    queue = [[x, y]];
+    
+    console.log(queue[0]);
+    //var neighbors = [[x + 5, y], [x, y + 5], [x - 5, y], [x, y - 5]]; 
+    
+    while (job = queue.shift()) {
+    
+        touched[job[0] + job[1] * canvas_width]++;
+        //console.log(job);
+        //console.log("job " + job[0]+ ", " + job[1]);
+        if (job[0]>=0 && job[0]<canvas_width && job[1]>=0 && job[1]<canvas_height && !matched[job[0] + job[1] * canvas_width]) {
+            console.log(x,y);
+            var pixel = get_from_by_coords(data, job);
+            if (color_distance(pixel, color)<threshhold) {
+                matched[job[0] + job[1] * canvas_width] = 1;
+                //console.log("marking " + (x + y * canvas_width));
+                queue.push([job[0] + 5, job[1]]);
+                queue.push([job[0], job[1] + 5]);
+                queue.push([job[0] - 5, job[1]]);
+                queue.push([job[0], job[1] - 5]);
+                //console.log(queue);
+            }
+        }
     }
-    return Math.sqrt(Math.pow(color_1[0] - color_2[0], 2) + Math.pow(color_1[1] - color_2[1], 2) + Math.pow(color_1[2] - color_2[2], 2));
 }
 
 function fill_similar_region(x, y) {
     
     var matched = new Int8Array(canvas_height * canvas_width);
+    var touched = new Int8Array(canvas_height * canvas_width);
     var data = dragon.data.data;
     var color = get_from_by_coords(data, [x, y]);
-    var threshhold = 1;
-    matched[x + y * canvas_width] = 1;
-    recursive_fill(x, y, data, color, threshhold, matched);
+    var threshhold = 35;
+    //matched[x + y * canvas_width] = 1;
+    //recursive_fill(x, y, data, color, threshhold, matched);
     
+    queue_fill(x, y, data, color, threshhold, matched, touched);
+    var colors = ["red","orange","yellow","green","blue","purple","black"];
     for (var i=0; i<canvas_width; i++) {
         for (var j=0; j<canvas_height; j++) {
             if (matched[i + j * canvas_width]) {
-                console.log('found at '+ i + ', ' + j);
-                context.rect(i, j, 5, 5);
-                context.fillStyle="red";
-                context.fill();
+                //console.log('found at '+ i + ', ' + j);
+                //context.rect(i, j, 5, 5);
+                context.fillStyle=colors[touched[(i + j * canvas_width)]];
+                console.log(touched[(i + j * canvas_width)] % 6);
+                context.fillRect(i, j, 5, 5);
             }
         }
     }
-    
+    console.log(touched);
     console.log(matched);
 }
 
@@ -209,6 +235,14 @@ function make_first_guess() {
     for (var i=0; i<guess_steps; i++) {
         test_area(canvas_width * (i + 1) / (guess_steps + 2) , canvas_height/2);
     }
+}
+
+function color_distance (color_1, color_2) {
+    // na•ve rgb distance implementation.  Checks for trivial case first to save lots of unneccesary shit.
+    if (color_1[0] == color_2[0] && color_1[1] == color_2[1] && color_1[2] == color_2[2]  ) {
+        return 0;
+    }
+    return Math.sqrt(Math.pow(color_1[0] - color_2[0], 2) + Math.pow(color_1[1] - color_2[1], 2) + Math.pow(color_1[2] - color_2[2], 2));
 }
 
 document.getElementById('workarea').addEventListener("click", function(e) {console.log(e); fill_similar_region(e.offsetX, e.offsetY);
