@@ -29,7 +29,7 @@ var canvas_height = 400;
 var canvas_width = 400;
 var guess_steps = 20;
 
-var step = 1;
+var step = 2;
 
 canvas = document.getElementById('workarea');
 dragon.context = context = canvas.getContext('2d');
@@ -156,6 +156,7 @@ function get_from_by_coords(data, coords) {
     return data.subarray( 4 * (coords[0] + coords[1] * canvas_width), 4 * (coords[0] + coords[1] * canvas_width + 1))
 }
 
+/*
 function recursive_fill(x, y, data, color, threshhold, matched) {
     //console.log("filling " + x + ", " + y);
     var neighbors = [[x + step, y], [x, y + step], [x - step, y], [x, y - step]]; 
@@ -201,31 +202,73 @@ function queue_fill(x, y, data, color, threshhold, matched, touched) {
         }
     }
 }
+*/
+
+function sweep_fill(x, y, data, color, threshhold, matched) {
+    var i, j, anything_changed, round;
+    
+    j = y;
+    v_start = 0;
+    round = 0;
+    
+    do {
+        anything_changed = 0;
+        v_step = (round % 2) ? -step : step;
+        v_target = (round % 2) ? 0 : canvas_height;
+        //anything_changed = 0;
+        //console.log(j, v_target, v_step, ((j - v_target ) * step ));
+        while ((j - v_target ) * v_step < 0) {
+            j+= v_step; 
+            for (i = v_start; (i - v_target ) * v_step < 0; i+= v_step) {
+                
+                if (!matched[i + j * canvas_width]) {
+                
+                    var pixel = get_from_by_coords(data, [i, j]);
+                    
+                    if (matched[(i - v_step) + j * canvas_width] && color_distance_check(pixel, color, threshhold)) {
+                        anything_changed++;
+                        matched[i + j * canvas_width] = 1;
+                    } else if (matched[i + (j - v_step) * canvas_width] && color_distance_check(pixel, color, threshhold)) {
+                        anything_changed++;
+                        matched[i + j * canvas_width] = 1;
+                    }
+                    
+                    
+                }
+            }
+        }
+        console.log(round++, anything_changed);
+        j = v_start = (round % 2) * (canvas_height);
+    } while (anything_changed);
+}
 
 function fill_similar_region(x, y) {
     
+    x = Math.floor(x/step)*step;
+    y = Math.floor(y/step)*step;
+    
     var matched = new Int8Array(canvas_height * canvas_width);
-    var touched = new Int8Array(canvas_height * canvas_width);
     var data = dragon.data.data;
     var color = get_from_by_coords(data, [x, y]);
     var threshhold = 35;
-    //matched[x + y * canvas_width] = 1;
+    matched[x + y * canvas_width] = 1;
     //recursive_fill(x, y, data, color, threshhold, matched);
     
-    queue_fill(x, y, data, color, threshhold, matched, touched);
+    sweep_fill(x, y, data, color, threshhold, matched);
     var colors = ["red","orange","yellow","green","blue","purple","black"];
+    
     for (var i=0; i<canvas_width; i++) {
         for (var j=0; j<canvas_height; j++) {
             if (matched[i + j * canvas_width]) {
                 //console.log('found at '+ i + ', ' + j);
                 //context.rect(i, j, step, step);
-                context.fillStyle=colors[touched[(i + j * canvas_width)]];
-                console.log(touched[(i + j * canvas_width)] % 6);
+                context.fillStyle=colors[0];
+                //console.log(touched[(i + j * canvas_width)] % 6);
                 context.fillRect(i, j, step, step);
             }
         }
     }
-    console.log(touched);
+    
     console.log(matched);
 }
 
@@ -244,6 +287,18 @@ function color_distance (color_1, color_2) {
     }
     return Math.sqrt(Math.pow(color_1[0] - color_2[0], 2) + Math.pow(color_1[1] - color_2[1], 2) + Math.pow(color_1[2] - color_2[2], 2));
 }
+
+function color_distance_check(color_1, color_2, threshhold) {
+    if (color_1[0] == color_2[0] && color_1[1] == color_2[1] && color_1[2] == color_2[2]  ) {
+        return true;
+    }
+    
+    if (Math.max(Math.abs(color_1[0] - color_2[0]), Math.abs(color_1[1] - color_2[1]), Math.abs(color_1[2] - color_2[2])) > threshhold) {
+        return false;
+    }
+    return true;
+}
+
 
 document.getElementById('workarea').addEventListener("click", function(e) {console.log(e); fill_similar_region(e.offsetX, e.offsetY);
 //get_from_by_coords(dragon.data.data, [e.offsetX, e.offsetY]));
