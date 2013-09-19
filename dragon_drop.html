@@ -228,14 +228,15 @@ function fill_similar_region(x, y, step) {
     
     sweep_fill(x, y, data, color, threshhold, matched, step);
     var colors = ["red","orange","yellow","green","blue","purple","black"];
-    
+
+    context.fillStyle = "brown";
     
     for (var i=0; i<canvas_width; i++) {
         for (var j=0; j<canvas_height; j++) {
             if (matched[i + j * canvas_width]) {
                 //console.log('found at '+ i + ', ' + j);
                 //context.rect(i, j, step, step);
-                context.fillStyle=colors["black"];
+                
                 //console.log(touched[(i + j * canvas_width)] % 6);
                 context.fillRect(i, j, step, step);
             }
