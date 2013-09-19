@@ -142,7 +142,7 @@ function previewfile(file) {
             context.clearRect ( 0, 0, canvas_width, canvas_height );
             context.drawImage(image, 0, 0, image.width, image.height, start_width, start_height, scale * image.width, scale * image.height);
             console.log(dragon.data = context.getImageData(0, 0, canvas_width, canvas_height));
-            make_first_guess(context);
+            find_thermometer(context);
         };
 
         reader.readAsDataURL(file);
@@ -217,6 +217,7 @@ function fill_similar_region(x, y, step) {
     sweep_fill(x, y, data, color, threshhold, matched, step);
     var colors = ["red","orange","yellow","green","blue","purple","black"];
     
+    /*
     for (var i=0; i<canvas_width; i++) {
         for (var j=0; j<canvas_height; j++) {
             if (matched[i + j * canvas_width]) {
@@ -228,6 +229,7 @@ function fill_similar_region(x, y, step) {
             }
         }
     }
+    */
     
     console.log(matched);
 }
@@ -243,15 +245,17 @@ function magic_wand_region(x, y, step) {
     var threshhold = 35;
     matched[x + y * canvas_width] = 1;
     
-    return sweep_fill(x, y, data, color, threshhold, matched, step);
+    sweep_fill(x, y, data, color, threshhold, matched, step);
+    return matched;
 }
 
 function grade_space(matched, step) {
+    //fill leaks (ie disqualify any fill that bumps a wall)
     for (i=step; i<canvas_width; i+=step) {
         if (matched[i + 1 * canvas_width] ||
             matched[i + (canvas_height - step) * canvas_width] ||
-            matched[1 + i * canvas_width] ||
-            matched[(canvas_height - step) + i * canvas_width]) {
+            matched[step + i * canvas_width] ||
+            matched[(canvas_height - step * 2) + i * canvas_width]) {
             return 0;
         }
     }
@@ -264,10 +268,40 @@ function grade_space(matched, step) {
 
 
 
-function find_() {
+function find_thermometer() {
+    var step = 5;
+    var matched_shapes = [];
+    var tested_points = [];
     for (var i=0; i<guess_steps; i++) {
-        test_area(canvas_width * (i + 1) / (guess_steps + 2) , canvas_height/2);
+        test_x = stepify(canvas_width * (i + 1) / (guess_steps + 2), step);
+        test_y = stepify(canvas_height/2, step);
+        var matched = false;
+        for (var j = 0; j < matched_shapes.length; j++) {
+            if (matched_shapes[j].map[test_x + test_y * canvas_width] && !matched) {
+                tested_points[i] = matched_shapes[j];
+                matched = true;
+            }
+        }
+        if (!matched) {
+            matched_shapes.push({x: test_x, y: test_y, map: magic_wand_region(test_x, test_y, step), score:0});
+            tested_points[i] = matched_shapes[matched_shapes.length-1];
+        }
     }
+    console.log(matched_shapes);
+    console.log(tested_points);
+    
+    //for(i = 0 ; i<100000; i++){ if(matched_shapes[0].map[i]){console.log(i)}}
+    var best_match_score = -1;
+    var best_match = {};
+    for (i = 0; i < matched_shapes.length; i++ ) {
+        var score = grade_space(matched_shapes[i].map, step);
+        if (score > best_match_score) {
+            best_match_score = score;
+            best_match = matched_shapes[i];
+        }
+    }
+    
+    fill_similar_region(best_match.x, best_match.y, 1);
 }
 
 function color_distance (color_1, color_2) {
@@ -288,6 +322,12 @@ function color_distance_check(color_1, color_2, threshhold) {
         return false;
     }
     return true;
+}
+
+function index_to_coords(index, step) {
+    var x = index % canvas_width;
+    var y = (index - x) / canvas_width;
+    return [count_steps(x, step), count_steps(y,step)];
 }
 
 
