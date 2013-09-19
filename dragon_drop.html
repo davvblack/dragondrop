@@ -1,14 +1,18 @@
 
 <style>
+body { font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; color: white; font-weight: bold;}
 #holder { border: 10px dashed #ccc; width: 400px; min-height: 400px; margin: 40px auto; padding: 20px;}
 #holder.hover { border: 10px dashed #0c0; }
 #holder img { display: block; margin: 10px auto; }
 #holder p { margin: 10px; font-size: 14px; }
-progress { width: 100%; }
+progress { width: 100%; margin: 10px 0; }
 progress:after { content: '%'; }
 .fail { background: #c00; padding: 2px; color: #fff; }
 .hidden { display: none !important;}
 #workarea { border: 1px solid black; margin 1px; }
+article { background: #778; border-radius: 30px; padding: 10px 30px; margin: 20px; box-shadow: 10px 10px 20px  #99A;}
+
+
 </style>
 <article>
     <div id="holder">
@@ -243,6 +247,7 @@ function color_distance_check(color_1, color_2, threshhold) {
         return true;
     }
     
+    //This does an ultra simple rectangular distance.
     if (Math.max(Math.abs(color_1[0] - color_2[0]), Math.abs(color_1[1] - color_2[1]), Math.abs(color_1[2] - color_2[2])) > threshhold) {
         return false;
     }
