@@ -1,7 +1,7 @@
 
 <style>
 body { font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; color: white; font-weight: bold;}
-#holder { border: 10px dashed #ccc; width: 400px; min-height: 400px; margin: 40px auto; padding: 20px;}
+#holder { border: 10px dashed #ccc; width: 400px; min-height: 400px; margin: 40px auto; padding: 20px; position:relative;}
 #holder.hover { border: 10px dashed #0c0; }
 #holder img { display: block; margin: 10px auto; }
 #holder p { margin: 10px; font-size: 14px; }
@@ -9,14 +9,19 @@ progress { width: 100%; margin: 10px 0; }
 progress:after { content: '%'; }
 .fail { background: #c00; padding: 2px; color: #fff; }
 .hidden { display: none !important;}
-#workarea { border: 1px solid black; margin 1px; }
+#workarea { position: absolute; }
+#background { position: absolute; }
 article { background: #778; border-radius: 30px; padding: 10px 30px; margin: 20px; box-shadow: 10px 10px 20px  #99A;}
 
+img{margin:0; position: absolute;}
+
+#mask { overflow: hidden; width: 400px; position: absolute; top:10px; }
 
 </style>
 <article>
     <div id="holder">
         <canvas id="workarea" width="400" height="400"></canvas>
+        <div id = "mask"></div>
     </div> 
     <p id="upload" class="hidden"><label>Drag & drop not supported, but you can still upload via this input field:<br><input type="file"></label></p>
     <p id="filereader">File API & FileReader API not supported</p>
@@ -141,7 +146,14 @@ function previewfile(file) {
             console.log(0, 0, canvas_width, canvas_height, start_width, start_height, scale * image.width, scale * image.height, scale);
             context.clearRect ( 0, 0, canvas_width, canvas_height );
             context.drawImage(image, 0, 0, image.width, image.height, start_width, start_height, scale * image.width, scale * image.height);
-            console.log(dragon.data = context.getImageData(0, 0, canvas_width, canvas_height));
+            //bg_context.drawImage(image, 0, 0, image.width, image.height, start_width, start_height, scale * image.width, scale * image.height);
+            image.width = scale * image.width;
+            image.height = scale * image.height;
+            
+            image.setAttribute("style", "left: "+ start_width + "px; " + "top:" + start_height + "px");
+            
+            document.getElementById('mask').appendChild(image);
+            dragon.data = context.getImageData(0, 0, canvas_width, canvas_height);
             setTimeout( function(){find_thermometer(context)}, 100);
         };
 
@@ -362,6 +374,16 @@ function index_to_coords(index, step) {
 document.getElementById('workarea').addEventListener("click", function(e) {console.log(e); fill_similar_region(e.offsetX, e.offsetY, 5);
 //get_from_by_coords(dragon.data.data, [e.offsetX, e.offsetY]));
 })
+
+var fill_wandering = 0;
+
+
+setInterval(function() {
+    fill_wandering ++;
+    var mask = document.getElementById("mask");
+    var height = canvas_height * (Math.sin(fill_wandering/45) / 5 + .5);
+    mask.setAttribute("style", " height: " +  height + "px");
+}, 10);
 
 
 </script><a id="htmlstepbadge" href="http://www.w3.org/html/logo/">
